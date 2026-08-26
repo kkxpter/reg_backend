@@ -13,9 +13,9 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 });
 
 // Add services to the container.
-// ผูก Oracle DbContext เข้ากับโปรเจกต์
+// 📌 เปลี่ยนจาก UseOracle มาเป็น UseNpgsql (PostgreSQL / Supabase)
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseOracle(builder.Configuration.GetConnectionString("OracleDb")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers();
 builder.Services.AddScoped<JwtTokenService>();

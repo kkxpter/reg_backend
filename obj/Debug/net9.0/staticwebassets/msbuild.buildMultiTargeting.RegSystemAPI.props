@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\RegSystemAPI.props" />
-</Project>
