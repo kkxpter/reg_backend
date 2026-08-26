@@ -13,7 +13,6 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 });
 
 // Add services to the container.
-// 📌 เปลี่ยนจาก UseOracle มาเป็น UseNpgsql (PostgreSQL / Supabase)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -45,22 +44,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
-// 📌 1. เพิ่ม CORS Policy ไว้ตรงนี้ (ก่อน builder.Build())
+// 📌 1. เพิ่ม CORS Policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        policy =>
-        {
-            policy.AllowAnyOrigin()
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-        });
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true) // อนุญาตทุกโดเมน (Vercel, Localhost, ฯลฯ)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials(); // รองรับการส่ง Credential/Token
+    });
 });
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+// 📌 2. เปิดใช้งาน CORS ไว้บนสุดตรงนี้เลยครับ! (สำคัญมาก)
+app.UseCors("AllowAll");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -70,12 +72,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// 📌 2. เปิดใช้งาน CORS (ต้องวางไว้ก่อน app.MapControllers() เสมอ!)
-app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// เปิดใช้งาน Controller Routes (เพื่อให้ API ที่เรากำลังจะเขียนทำงานได้)
+// เปิดใช้งาน Controller Routes
 app.MapControllers();
 
 var summaries = new[]
