@@ -1,12 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using RegSystemAPI.Data;
 using RegSystemAPI.Models;
+using RegSystemAPI.Contracts;
 
 namespace RegSystemAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class RegistrationsController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -18,13 +22,16 @@ namespace RegSystemAPI.Controllers
 
         // GET: api/registrations (ดูประวัติการลงทะเบียนทั้งหมดพร้อมข้อมูลนิสิตและกลุ่มเรียน)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Registration>>> GetRegistrations()
+        public async Task<ActionResult<IEnumerable<RegistrationDto>>> GetRegistrations()
         {
-            return await _context.Registrations
+            var studentId = GetStudentId();
+            var registrations = await _context.Registrations
+                .Where(r => r.StudentId == studentId)
                 .Include(r => r.Student)
                 .Include(r => r.Section)
                 .ThenInclude(s => s!.Course)
                 .ToListAsync();
+            return registrations.Select(RegistrationDto.FromRegistration).ToList();
         }
 
         // POST: api/registrations
@@ -33,7 +40,8 @@ namespace RegSystemAPI.Controllers
         public async Task<IActionResult> RegisterCourse([FromBody] RegisterRequestDto request)
         {
             // 1. ตรวจสอบว่านิสิตมีตัวตนจริงไหม
-            var student = await _context.Students.FindAsync(request.StudentId);
+            var studentId = GetStudentId();
+            var student = await _context.Students.FindAsync(studentId);
             if (student == null)
             {
                 return NotFound(new { message = "ไม่พบรหัสนิสิตนี้ในระบบ" });
@@ -51,7 +59,7 @@ namespace RegSystemAPI.Controllers
 
             // 3. ตรวจสอบว่านิสิตเคยลงทะเบียนกลุ่มเรียนนี้ไปแล้วหรือยัง (Sec เดิม)
             var alreadyRegistered = await _context.Registrations
-                .AnyAsync(r => r.StudentId == request.StudentId && r.SectionId == request.SectionId && r.RegStatus == "REGISTERED");
+                .AnyAsync(r => r.StudentId == studentId && r.SectionId == request.SectionId && r.RegStatus == "REGISTERED");
 
             if (alreadyRegistered)
             {
@@ -61,7 +69,7 @@ namespace RegSystemAPI.Controllers
             // 📌 4. [เพิ่มตรงนี้] ตรวจสอบว่าในเทอมนี้ นิสิตเคยลงทะเบียน "รายวิชานี้" ไปแล้วหรือยัง (แม้จะคนละ Sec)
             var alreadyRegisteredCourse = await _context.Registrations
                 .Include(r => r.Section)
-                .AnyAsync(r => r.StudentId == request.StudentId && 
+                .AnyAsync(r => r.StudentId == studentId && 
                                r.Semester == request.Semester && 
                                r.RegStatus == "REGISTERED" && 
                                r.Section!.CourseCode == section.CourseCode);
@@ -80,7 +88,7 @@ namespace RegSystemAPI.Controllers
             // 6. ทำการบันทึกการลงทะเบียน
             var registration = new Registration
             {
-                StudentId = request.StudentId,
+                StudentId = studentId,
                 SectionId = request.SectionId,
                 Semester = request.Semester,
                 RegStatus = "REGISTERED",
@@ -112,6 +120,11 @@ namespace RegSystemAPI.Controllers
                 return NotFound(new { message = "ไม่พบข้อมูลการลงทะเบียนนี้ในระบบ" });
             }
 
+            if (registration.StudentId != GetStudentId())
+            {
+                return Forbid();
+            }
+
             // ถ้าเจอ Section ให้ลดจำนวนคนลงทะเบียน (Enrolled) ลง 1 คน
             if (registration.Section != null)
             {
@@ -125,13 +138,18 @@ namespace RegSystemAPI.Controllers
 
             return Ok(new { message = "ถอนรายวิชาสำเร็จ" });
         }
-    }
 
     // DTO สำหรับรับข้อมูลตอนกดลงทะเบียน
     public class RegisterRequestDto
     {
-        public string StudentId { get; set; } = string.Empty;
         public int SectionId { get; set; }
         public string Semester { get; set; } = "1/2569";
+    }
+
+    private string GetStudentId()
+    {
+        return User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? throw new UnauthorizedAccessException("Student identity claim is missing.");
+    }
     }
 }

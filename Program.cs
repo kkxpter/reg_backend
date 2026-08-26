@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using RegSystemAPI.Data;
+using RegSystemAPI.Services;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
@@ -14,6 +18,32 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseOracle(builder.Configuration.GetConnectionString("OracleDb")));
 
 builder.Services.AddControllers();
+builder.Services.AddScoped<JwtTokenService>();
+
+var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+if (string.IsNullOrWhiteSpace(jwtKey) || string.IsNullOrWhiteSpace(jwtIssuer) || string.IsNullOrWhiteSpace(jwtAudience))
+{
+    throw new InvalidOperationException("JWT configuration is required. Set Jwt__Key, Jwt__Issuer, and Jwt__Audience in environment variables.");
+}
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+    });
+builder.Services.AddAuthorization();
 
 // 📌 1. เพิ่ม CORS Policy ไว้ตรงนี้ (ก่อน builder.Build())
 builder.Services.AddCors(options =>
@@ -42,6 +72,8 @@ app.UseHttpsRedirection();
 
 // 📌 2. เปิดใช้งาน CORS (ต้องวางไว้ก่อน app.MapControllers() เสมอ!)
 app.UseCors("AllowAll");
+app.UseAuthentication();
+app.UseAuthorization();
 
 // เปิดใช้งาน Controller Routes (เพื่อให้ API ที่เรากำลังจะเขียนทำงานได้)
 app.MapControllers();

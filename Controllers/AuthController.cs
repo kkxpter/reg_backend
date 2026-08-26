@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RegSystemAPI.Data;
+using RegSystemAPI.Contracts;
+using RegSystemAPI.Services;
 
 namespace RegSystemAPI.Controllers
 {
@@ -9,10 +11,12 @@ namespace RegSystemAPI.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly JwtTokenService _jwtTokenService;
 
-        public AuthController(AppDbContext context)
+        public AuthController(AppDbContext context, JwtTokenService jwtTokenService)
         {
             _context = context;
+            _jwtTokenService = jwtTokenService;
         }
 
         // DTO สำหรับรับข้อมูล Login
@@ -46,16 +50,8 @@ namespace RegSystemAPI.Controllers
             return Ok(new
             {
                 message = "เข้าสู่ระบบสำเร็จ!",
-                student = new
-                {
-                    student.StudentId,
-                    FirstNameTh = student.FirstNameTh, // เปลี่ยนให้ตรงกับ Model ใหม่
-                    LastNameTh = student.LastNameTh,   // เปลี่ยนให้ตรงกับ Model ใหม่
-                    student.UniversityEmail,
-                    student.Gpax,
-                    student.TotalCredits,
-                    student.Status
-                }
+                accessToken = _jwtTokenService.CreateToken(student),
+                student = StudentProfileDto.FromStudent(student)
             });
         }
     }
