@@ -1,7 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using RegSystemAPI.Data;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    // ปิดการโหลดไฟล์ซ้ำอัตโนมัติ เพื่อแก้ปัญหา inotify limit บน Linux Cloud
+    WebRootPath = "wwwroot"
+});
 
 // Add services to the container.
 // ผูก Oracle DbContext เข้ากับโปรเจกต์
