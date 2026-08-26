@@ -5,7 +5,7 @@ using RegSystemAPI.Models;
 
 namespace RegSystemAPI.Controllers
 {
-    [Route("api/[controller]")] // จะกลายเป็น api/sections อัตโนมัติ
+    [Route("api/[controller]")]
     [ApiController]
     public class SectionsController : ControllerBase
     {
@@ -20,9 +20,8 @@ namespace RegSystemAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Section>>> GetSections()
         {
-            return await _context.Sections
-                .Include(s => s.Course) // 📌 สำคัญมาก ต้องดึงข้อมูล Course มาพร้อมกันด้วย
-                .ToListAsync();
+            // 📌 เอา .Include ออก เพื่อป้องกันการพัง
+            return await _context.Sections.ToListAsync();
         }
     }
 }
