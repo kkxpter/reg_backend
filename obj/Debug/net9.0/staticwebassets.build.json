@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "aT4YI59TaUwjE3XPiSE8+YNgtPjTUprN5+9ULwItjX8=",
+  "Source": "RegSystemAPI",
+  "BasePath": "_content/RegSystemAPI",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}

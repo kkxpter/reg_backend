@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RegSystemAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b98b6ec1743e038593f47d4916c909d03c9e1f38")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e680341dd46b5489f6f5785b53ac9c6f4d3d1303")]
 [assembly: System.Reflection.AssemblyProductAttribute("RegSystemAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RegSystemAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
